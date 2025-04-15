@@ -43,4 +43,5 @@ Dev (Playbooks) ---> EE (Containers) ---> Automation Controller ---> Target Host
                          ↑
                 Private Automation Hub
 
-![alt text](image.png)
+
+![AAP Architecture](../diagrams/aap-architecture.png)
