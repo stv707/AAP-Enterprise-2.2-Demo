@@ -38,10 +38,5 @@ Red Hat Ansible Automation Platform (AAP) is an enterprise framework for buildin
 
 ## 🔗 Component Interaction
 
-```text
-Dev (Playbooks) ---> EE (Containers) ---> Automation Controller ---> Target Hosts
-                         ↑
-                Private Automation Hub
 
-
-![AAP Architecture](../diagrams/aap-architecture.png)
+![AAP Architecture](../diagrams/image.png)
