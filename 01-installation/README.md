@@ -38,5 +38,44 @@ Red Hat Ansible Automation Platform (AAP) is an enterprise framework for buildin
 
 ## 🔗 Component Interaction
 
-
 ![AAP Architecture](../diagrams/image.png)
+
+### UPDATE on 2.5: 
+# Red Hat Ansible Automation Platform Architecture Comparison
+
+
+| AAP 2.2                                           | AAP 2.5                                                 |
+|--------------------------------------------------|----------------------------------------------------------|
+| 👤 Developer                                     | 👤 Developer                                             |
+|     |                                            |     |                                                    |
+|     v                                            |     v                                                    |
+| Ansible CLI / Navigator                         | Ansible CLI / Navigator                                 |
+|     |                                            |     |                                                    |
+|     +--> Automation Controller                  |     +--> Automation Controller                          |
+|     +--> Private Automation Hub                 |     +--> Private Automation Hub                         |
+|                                                 |     +--> Event-Driven Ansible                           |
+|                                                 |            |                                              |
+|     |                                            |            v                                              |
+|     v                                            |      [Platform Gateway]                                 |
+| Executes on Managed Nodes                       |  - Centralized access control                           |
+|                                                 |  - Single sign-on / authentication                      |
+|                                                 |  - Unified gateway for API & UI access                  |
+|                                                 |            |                                              |
+|                                                 |            v                                              |
+|                                                 |   Red Hat Insights, Managed Nodes, etc.                 |
+
+
+## What Platform Gateway Solves
+
+### 🚫 Problem in AAP 2.2
+
+- Each component (Controller, Hub, Event-Driven, etc.) handled its own authentication.
+- No unified control plane or entry point.
+- Harder to scale or integrate with external SSO systems.
+
+### ✅ Solution in AAP 2.5 (Platform Gateway)
+
+- Acts as a centralized access layer (like a front door).
+- Handles all authentication (OIDC, SAML, LDAP) in one place.
+- Makes it easier to plug AAP into enterprise IAM or analytics systems.
+- Simplifies installation, monitoring, and scaling in large environments.
