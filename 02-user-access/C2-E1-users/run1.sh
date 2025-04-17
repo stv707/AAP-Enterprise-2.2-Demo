@@ -59,12 +59,13 @@ create_user_and_assign "azmi"  "Azmi"  "Hassan" "azmi@uob.local" "SecTeam"
 echo "🔑 Assigning roles for demo..."
 
 # Users
-tower-cli role grant --type organization --target Default --user alice --role Admin || true
-tower-cli role grant --type organization --target Default --user irene --role Auditor || true
+tower-cli role grant --user alice --role Admin --organization Default || true
+tower-cli role grant --user irene --role Auditor --organization Default || true
 
 # Teams
-tower-cli role grant --type organization --target Default --team DevTeam --role Member || true
-tower-cli role grant --type organization --target Default --team OpsTeam --role Auditor || true
-tower-cli role grant --type organization --target Default --team SecTeam --role Admin || true
+tower-cli role grant --team DevTeam --role Member --organization Default || true
+tower-cli role grant --team OpsTeam --role Auditor --organization Default || true
+tower-cli role grant --team SecTeam --role Admin --organization Default || true
+
 
 echo "🎉 All users, teams, and roles created and assigned successfully."
