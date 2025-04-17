@@ -1,0 +1,4 @@
+sysops_user32:admin
+sysops_user70:auditor
+infra_user84:admin
+infra_user63:auditor

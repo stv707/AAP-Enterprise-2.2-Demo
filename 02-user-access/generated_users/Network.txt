@@ -1,0 +1,4 @@
+netops_user48:admin
+netops_user48:auditor
+fwteam_user61:admin
+fwteam_user51:auditor
