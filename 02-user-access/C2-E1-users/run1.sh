@@ -13,15 +13,14 @@ TOKEN=$(curl -s -X POST "${HUB_API}v3/auth/token/" \
 auth_header="Authorization: Token $TOKEN"
 
 # === GROUPS CREATION ===
-declare -A GROUPS
-GROUPS=( ["DevTeam"]="Upload collections" ["OpsTeam"]="Manage containers" ["SecTeam"]="Read-only" )
+GROUPS=("DevTeam" "OpsTeam" "SecTeam")
 
-for group in "${!GROUPS[@]}"; do
+for group in "${GROUPS[@]}"; do
   echo "🔧 Creating group: $group"
   curl -s -X POST "${HUB_API}v3/groups/" \
     -H "Content-Type: application/json" \
     -H "$auth_header" \
-    -d "{\"name\": \"$group\"}" | jq .
+    -d "{\"name\": \"$group\"}" > /dev/null
 done
 
 # === USERS CREATION ===
@@ -44,17 +43,22 @@ create_user() {
           \"last_name\": \"$last\",
           \"email\": \"$email\",
           \"password\": \"redhat123\"
-        }" | jq .
+        }" > /dev/null
 
   # Fetch user & group IDs
-  UID=$(curl -s -H "$auth_header" "${HUB_API}v3/users/?username=$username" | jq -r '.results[0].id')
-  GID=$(curl -s -H "$auth_header" "${HUB_API}v3/groups/?name=$group" | jq -r '.results[0].id')
+  user_id=$(curl -s -H "$auth_header" "${HUB_API}v3/users/?username=$username" | jq -r '.results[0].id')
+  group_id=$(curl -s -H "$auth_header" "${HUB_API}v3/groups/?name=$group" | jq -r '.results[0].id')
+
+  if [[ "$user_id" == "null" || "$group_id" == "null" ]]; then
+    echo "❌ Error fetching user/group ID for $username / $group"
+    return
+  fi
 
   echo "➕ Adding $username to $group"
-  curl -s -X POST "${HUB_API}v3/groups/$GID/users/" \
+  curl -s -X POST "${HUB_API}v3/groups/$group_id/users/" \
     -H "Content-Type: application/json" \
     -H "$auth_header" \
-    -d "[\"$UID\"]" | jq .
+    -d "[\"$user_id\"]" > /dev/null
 }
 
 # Add UOB-style users
@@ -64,4 +68,4 @@ create_user "irene" "Irene" "Lau" "irene@uob.local" "OpsTeam"
 create_user "ian"   "Ian"   "Tan" "ian@uob.local" "OpsTeam"
 create_user "azmi"  "Azmi"  "Hassan" "azmi@uob.local" "SecTeam"
 
-echo "✅ All users and groups created."
+echo "✅ All users and groups created successfully."
