@@ -4,40 +4,35 @@
 CONTROLLER_HOST="https://controller.lab.example.com"
 USERNAME="admin"
 PASSWORD="redhat"
-CONFIG_DIR="$HOME/.config/awx"
-CONFIG_FILE="$CONFIG_DIR/cli.cfg"
 
 echo "🔐 Logging in to Automation Controller..."
 # Run login command and capture token
-LOGIN_OUTPUT=$(awx --conf.host $CONTROLLER_HOST \
-                  --conf.username $USERNAME \
-                  --conf.password $PASSWORD \
-                  --conf.insecure login)
-
-TOKEN=$(echo "$LOGIN_OUTPUT" | jq -r '.token')
+TOKEN=$(awx --conf.host "$CONTROLLER_HOST" \
+            --conf.username "$USERNAME" \
+            --conf.password "$PASSWORD" \
+            --conf.insecure login | jq -r .token)
 
 if [[ -z "$TOKEN" || "$TOKEN" == "null" ]]; then
   echo "❌ Login failed. Check credentials or controller URL."
   exit 1
 fi
 
-# Create CLI config manually
-echo "📝 Saving token and host config to $CONFIG_FILE"
-mkdir -p "$CONFIG_DIR"
-cat > "$CONFIG_FILE" <<EOF
-host = $CONTROLLER_HOST
-token = $TOKEN
-format = json
-conf.insecure = True
-EOF
+# Export for the wrapper
+export AWX_HOST="$CONTROLLER_HOST"
+export AWX_TOKEN="$TOKEN"
 
-echo "✅ Login success. CLI configured."
+echo "✅ Login successful."
+
+# === WRAPPER FUNCTION ===
+AWX() {
+  awx --conf.host "$AWX_HOST" --conf.token "$AWX_TOKEN" --conf.insecure "$@"
+}
 
 # === Create Teams ===
 echo "👥 Creating teams..."
-awx team create --name DevTeam --organization Default || true
-awx team create --name OpsTeam --organization Default || true
-awx team create --name SecTeam --organization Default || true
+AWX team create --name DevTeam --organization Default || true
+AWX team create --name OpsTeam --organization Default || true
+AWX team create --name SecTeam --organization Default || true
 
 # === Create Users and Assign to Teams ===
 create_user_and_assign() {
@@ -48,7 +43,7 @@ create_user_and_assign() {
   local team="$5"
 
   echo "👤 Creating user: $username"
-  awx user create \
+  AWX user create \
     --username "$username" \
     --password "redhat123" \
     --first-name "$fname" \
@@ -57,7 +52,7 @@ create_user_and_assign() {
     --is-superuser false || true
 
   echo "➕ Assigning $username to $team"
-  awx team associate --team "$team" --user "$username"
+  AWX team associate --team "$team" --user "$username" || true
 }
 
 # === UOB-Style Users ===
