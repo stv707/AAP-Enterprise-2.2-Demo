@@ -4,42 +4,23 @@ CONTROLLER_URL="https://controller.lab.example.com"
 ADMIN_USER="admin"
 ADMIN_PASS="redhat"
 
-# Setup CLI config
 tower-cli config host "$CONTROLLER_URL"
 tower-cli config username "$ADMIN_USER"
 tower-cli config password "$ADMIN_PASS"
 tower-cli config verify_ssl false
 
-echo "📦 Creating placeholder resources..."
+echo "🔐 Assigning org-level roles to teams..."
 
-# === Create Dummy Inventory for Each Org
-for ORG in IT Dev Network; do
-  echo "📦 Creating inventory for $ORG"
-  tower-cli inventory create --name "${ORG}_Inventory" --organization "$ORG" || echo "⚠️  Inventory exists"
-done
+# IT Org
+tower-cli role grant --type admin   --team SysOps    --organization IT || true
+tower-cli role grant --type auditor --team Infra     --organization IT || true
 
-# === Create Dummy Project
-echo "📁 Creating shared dummy project"
-tower-cli project create \
-  --name "SharedProject" \
-  --organization Dev \
-  --scm-type git \
-  --scm-url https://github.com/ansible/ansible-tower-samples.git \
-  --scm-branch main || echo "⚠️  Project may already exist"
+# Dev Org
+tower-cli role grant --type admin   --team DevTeam   --organization Dev || true
+tower-cli role grant --type auditor --team DevSecOps --organization Dev || true
 
-# === Create Dummy Job Template
-echo "🚀 Creating job templates"
-tower-cli job_template create --name "DeployApp" --inventory "Dev_Inventory" --project "SharedProject" --playbook hello_world.yml || echo "⚠️  Job template may already exist"
-tower-cli job_template create --name "NetScan"   --inventory "Network_Inventory" --project "SharedProject" --playbook hello_world.yml || echo "⚠️  Job template may already exist"
+# Network Org
+tower-cli role grant --type admin   --team NetOps    --organization Network || true
+tower-cli role grant --type auditor --team FWTeam    --organization Network || true
 
-echo "🔐 Assigning roles to teams..."
-
-# === Assign Roles
-tower-cli role grant --type admin   --team SysOps     --inventory IT_Inventory || true
-tower-cli role grant --type admin   --team Infra      --inventory IT_Inventory || true
-tower-cli role grant --type execute --team DevTeam    --job-template DeployApp || true
-tower-cli role grant --type use     --team DevSecOps  --project SharedProject || true
-tower-cli role grant --type execute --team NetOps     --job-template NetScan || true
-tower-cli role grant --type use     --team FWTeam     --inventory Network_Inventory || true
-
-echo "✅ Role assignments complete. Demo environment is ready!"
+echo "✅ All team roles assigned at org level. Users will only see & operate within their silo."
