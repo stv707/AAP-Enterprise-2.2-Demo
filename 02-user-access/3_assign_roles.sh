@@ -9,18 +9,15 @@ tower-cli config username "$ADMIN_USER"
 tower-cli config password "$ADMIN_PASS"
 tower-cli config verify_ssl false
 
-echo "🔐 Assigning org-level roles to teams..."
+echo "🔐 Assigning org-level roles to individual users..."
 
-# IT Org
-tower-cli role grant --type admin   --team SysOps    --organization IT || true
-tower-cli role grant --type auditor --team Infra     --organization IT || true
+for ORG_FILE in generated_users/*.txt; do
+  ORG_NAME=$(basename "$ORG_FILE" .txt)
 
-# Dev Org
-tower-cli role grant --type admin   --team DevTeam   --organization Dev || true
-tower-cli role grant --type auditor --team DevSecOps --organization Dev || true
+  while IFS=: read -r USER ROLE; do
+    echo "🔑 Granting $ROLE to $USER in $ORG_NAME"
+    tower-cli organization associate --user "$USER" --name "$ORG_NAME" --role "$ROLE" || echo "⚠️  Failed for $USER"
+  done
+done
 
-# Network Org
-tower-cli role grant --type admin   --team NetOps    --organization Network || true
-tower-cli role grant --type auditor --team FWTeam    --organization Network || true
-
-echo "✅ All team roles assigned at org level. Users will only see & operate within their silo."
+echo "✅ All user org-level roles assigned."

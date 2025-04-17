@@ -5,24 +5,18 @@ ADMIN_USER="admin"
 ADMIN_PASS="redhat"
 DEFAULT_PASS="redhat123"
 
-# Configure tower-cli
 tower-cli config host "$CONTROLLER_URL"
 tower-cli config username "$ADMIN_USER"
 tower-cli config password "$ADMIN_PASS"
 tower-cli config verify_ssl false
 
-# Define structure
 declare -A ORG_TEAMS=(
   [IT]="SysOps Infra"
   [Dev]="DevTeam DevSecOps"
   [Network]="NetOps FWTeam"
 )
 
-generate_usernames() {
-  local team_prefix="$1"
-  echo "${team_prefix,,}user$((RANDOM % 90 + 10))"
-  echo "${team_prefix,,}user$((RANDOM % 90 + 10))"
-}
+mkdir -p generated_users
 
 for ORG in "${!ORG_TEAMS[@]}"; do
   echo "🏢 Organization: $ORG"
@@ -31,8 +25,11 @@ for ORG in "${!ORG_TEAMS[@]}"; do
     echo "👥 Creating team: $TEAM under $ORG"
     tower-cli team create --name "$TEAM" --organization "$ORG" || echo "⚠️  $TEAM may already exist."
 
-    # Generate and create 2 users
-    for USERNAME in $(generate_usernames "$TEAM"); do
+    USERS=()
+    for i in 1 2; do
+      USERNAME="${TEAM,,}_user$((RANDOM % 90 + 10))"
+      USERS+=("$USERNAME")
+
       echo "👤 Creating user: $USERNAME"
       tower-cli user create \
         --username "$USERNAME" \
@@ -42,11 +39,16 @@ for ORG in "${!ORG_TEAMS[@]}"; do
         --email "$USERNAME@lab.local" \
         --is-superuser false || echo "⚠️  $USERNAME may already exist."
 
-      echo "➕ Assigning $USERNAME to team $TEAM"
+      echo "➕ Assigning $USERNAME to $TEAM"
       tower-cli team associate --team "$TEAM" --user "$USERNAME" || echo "⚠️  Failed to associate $USERNAME"
     done
+
+    # Save users to file for role assignment
+    echo "${USERS[0]}:admin" >> "generated_users/${ORG}.txt"
+    echo "${USERS[1]}:auditor" >> "generated_users/${ORG}.txt"
+
     echo ""
   done
 done
 
-echo "✅ All teams and users created + assigned."
+echo "✅ All teams and users created + mapped for org-level RBAC."
