@@ -55,17 +55,18 @@ create_user_and_assign "irene" "Irene" "Lau" "irene@uob.local" "OpsTeam"
 create_user_and_assign "ian"   "Ian"   "Tan" "ian@uob.local" "OpsTeam"
 create_user_and_assign "azmi"  "Azmi"  "Hassan" "azmi@uob.local" "SecTeam"
 
-# === Step 5: Assign Roles on Organization
+# === Step 5: Assign Roles for Demo (Final Compatible Syntax)
 echo "🔑 Assigning roles for demo..."
 
 # Users
-tower-cli organization associate --user alice --role admin --name Default || true
-tower-cli organization associate --user irene --role auditor --name Default || true
+tower-cli role grant admin --user alice --organization Default || true
+tower-cli role grant auditor --user irene --organization Default || true
 
 # Teams
-tower-cli organization associate --team DevTeam --role member --name Default || true
-tower-cli organization associate --team OpsTeam --role auditor --name Default || true
-tower-cli organization associate --team SecTeam --role admin --name Default || true
+tower-cli role grant member --team DevTeam --organization Default || true
+tower-cli role grant auditor --team OpsTeam --organization Default || true
+tower-cli role grant admin --team SecTeam --organization Default || true
+
 
 
 
