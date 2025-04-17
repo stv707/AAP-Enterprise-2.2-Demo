@@ -40,9 +40,10 @@ tower-cli host create \
 
 # === Step 5: Associate Host to Group
 echo "🔗 Associating host to group"
-tower-cli group associate \
-  --group "$GROUP_NAME" \
-  --host "$HOST_NAME" || true
+tower-cli host associate \
+  --host "$HOST_NAME" \
+  --group "$GROUP_NAME" || true
+
 
 # === Step 6: Grant Admin Role on Inventory to Team
 echo "🔐 Granting Admin role on inventory to team $TEAM_NAME"
