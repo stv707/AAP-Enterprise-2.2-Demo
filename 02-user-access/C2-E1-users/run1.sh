@@ -1,71 +1,70 @@
 #!/bin/bash
 
 # === CONFIG ===
-HUB_API="https://hub.lab.example.com/api/galaxy/"
-AUTH_USER="admin"
-AUTH_PASS="redhat"
+CONTROLLER_HOST="https://controller.lab.example.com"
+USERNAME="admin"
+PASSWORD="redhat"
+CONFIG_DIR="$HOME/.config/awx"
+CONFIG_FILE="$CONFIG_DIR/cli.cfg"
 
-# Login and get token
-TOKEN=$(curl -s -X POST "${HUB_API}v3/auth/token/" \
-  -H "Content-Type: application/json" \
-  -d "{\"username\": \"${AUTH_USER}\", \"password\": \"${AUTH_PASS}\"}" | jq -r .token)
+echo "🔐 Logging in to Automation Controller..."
+# Run login command and capture token
+LOGIN_OUTPUT=$(awx --conf.host $CONTROLLER_HOST \
+                  --conf.username $USERNAME \
+                  --conf.password $PASSWORD \
+                  --conf.insecure login)
 
-auth_header="Authorization: Token $TOKEN"
+TOKEN=$(echo "$LOGIN_OUTPUT" | jq -r '.token')
 
-# === GROUPS CREATION ===
-GROUPS=("DevTeam" "OpsTeam" "SecTeam")
+if [[ -z "$TOKEN" || "$TOKEN" == "null" ]]; then
+  echo "❌ Login failed. Check credentials or controller URL."
+  exit 1
+fi
 
-for group in "${GROUPS[@]}"; do
-  echo "🔧 Creating group: $group"
-  curl -s -X POST "${HUB_API}v3/groups/" \
-    -H "Content-Type: application/json" \
-    -H "$auth_header" \
-    -d "{\"name\": \"$group\"}" > /dev/null
-done
+# Create CLI config manually
+echo "📝 Saving token and host config to $CONFIG_FILE"
+mkdir -p "$CONFIG_DIR"
+cat > "$CONFIG_FILE" <<EOF
+host = $CONTROLLER_HOST
+token = $TOKEN
+format = json
+conf.insecure = True
+EOF
 
-# === USERS CREATION ===
-echo "👤 Creating users and assigning to groups..."
+echo "✅ Login success. CLI configured."
 
-create_user() {
+# === Create Teams ===
+echo "👥 Creating teams..."
+awx team create --name DevTeam --organization Default || true
+awx team create --name OpsTeam --organization Default || true
+awx team create --name SecTeam --organization Default || true
+
+# === Create Users and Assign to Teams ===
+create_user_and_assign() {
   local username="$1"
-  local first="$2"
-  local last="$3"
+  local fname="$2"
+  local lname="$3"
   local email="$4"
-  local group="$5"
+  local team="$5"
 
-  echo "➡️ Creating user: $username in $group"
-  curl -s -X POST "${HUB_API}v3/users/" \
-    -H "Content-Type: application/json" \
-    -H "$auth_header" \
-    -d "{
-          \"username\": \"$username\",
-          \"first_name\": \"$first\",
-          \"last_name\": \"$last\",
-          \"email\": \"$email\",
-          \"password\": \"redhat123\"
-        }" > /dev/null
+  echo "👤 Creating user: $username"
+  awx user create \
+    --username "$username" \
+    --password "redhat123" \
+    --first-name "$fname" \
+    --last-name "$lname" \
+    --email "$email" \
+    --is-superuser false || true
 
-  # Fetch user & group IDs
-  user_id=$(curl -s -H "$auth_header" "${HUB_API}v3/users/?username=$username" | jq -r '.results[0].id')
-  group_id=$(curl -s -H "$auth_header" "${HUB_API}v3/groups/?name=$group" | jq -r '.results[0].id')
-
-  if [[ "$user_id" == "null" || "$group_id" == "null" ]]; then
-    echo "❌ Error fetching user/group ID for $username / $group"
-    return
-  fi
-
-  echo "➕ Adding $username to $group"
-  curl -s -X POST "${HUB_API}v3/groups/$group_id/users/" \
-    -H "Content-Type: application/json" \
-    -H "$auth_header" \
-    -d "[\"$user_id\"]" > /dev/null
+  echo "➕ Assigning $username to $team"
+  awx team associate --team "$team" --user "$username"
 }
 
-# Add UOB-style users
-create_user "alice" "Alice" "Tan" "alice@uob.local" "DevTeam"
-create_user "bala"  "Bala"  "Krishna" "bala@uob.local" "DevTeam"
-create_user "irene" "Irene" "Lau" "irene@uob.local" "OpsTeam"
-create_user "ian"   "Ian"   "Tan" "ian@uob.local" "OpsTeam"
-create_user "azmi"  "Azmi"  "Hassan" "azmi@uob.local" "SecTeam"
+# === UOB-Style Users ===
+create_user_and_assign "alice" "Alice" "Tan" "alice@uob.local" "DevTeam"
+create_user_and_assign "bala"  "Bala"  "Krishna" "bala@uob.local" "DevTeam"
+create_user_and_assign "irene" "Irene" "Lau" "irene@uob.local" "OpsTeam"
+create_user_and_assign "ian"   "Ian"   "Tan" "ian@uob.local" "OpsTeam"
+create_user_and_assign "azmi"  "Azmi"  "Hassan" "azmi@uob.local" "SecTeam"
 
-echo "✅ All users and groups created successfully."
+echo "🎉 All users and teams created successfully."
