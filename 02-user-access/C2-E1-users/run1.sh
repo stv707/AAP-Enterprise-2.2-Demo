@@ -3,6 +3,7 @@
 CONTROLLER_URL="https://controller.lab.example.com"
 ADMIN_USER="admin"
 ADMIN_PASS="redhat"
+USER_PASS="redhat123"   # 🔐 Password for all created users
 
 # === Step 1: Configure tower-cli
 echo "🔐 Setting tower-cli config..."
@@ -37,7 +38,7 @@ create_user_and_assign() {
   echo "👤 Creating user: $username"
   tower-cli user create \
     --username "$username" \
-    --password "redhat123" \
+    --password "$USER_PASS" \
     --first-name "$first" \
     --last-name "$last" \
     --email "$email" \
@@ -47,10 +48,23 @@ create_user_and_assign() {
   tower-cli team associate --team "$team" --user "$username" || true
 }
 
+# === Users to Create and Assign ===
 create_user_and_assign "alice" "Alice" "Tan" "alice@uob.local" "DevTeam"
 create_user_and_assign "bala"  "Bala"  "Krishna" "bala@uob.local" "DevTeam"
 create_user_and_assign "irene" "Irene" "Lau" "irene@uob.local" "OpsTeam"
 create_user_and_assign "ian"   "Ian"   "Tan" "ian@uob.local" "OpsTeam"
 create_user_and_assign "azmi"  "Azmi"  "Hassan" "azmi@uob.local" "SecTeam"
 
-echo "🎉 All users, teams, and assignments created successfully."
+# === Step 5: Assign Roles on Organization
+echo "🔑 Assigning roles for demo..."
+
+# Users
+tower-cli role grant --type organization --target Default --user alice --role Admin || true
+tower-cli role grant --type organization --target Default --user irene --role Auditor || true
+
+# Teams
+tower-cli role grant --type organization --target Default --team DevTeam --role Member || true
+tower-cli role grant --type organization --target Default --team OpsTeam --role Auditor || true
+tower-cli role grant --type organization --target Default --team SecTeam --role Admin || true
+
+echo "🎉 All users, teams, and roles created and assigned successfully."
