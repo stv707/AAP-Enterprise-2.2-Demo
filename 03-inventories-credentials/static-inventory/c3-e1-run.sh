@@ -31,19 +31,24 @@ tower-cli group create \
   --description "Production servers" \
   --inventory "$INVENTORY_NAME" || true
 
-# === Step 4: Add Host ===
-echo "🖥️  Adding Host: $HOST_NAME"
+# === Step 4: Create Host (without --group)
+echo "🖥️  Creating Host: $HOST_NAME"
 tower-cli host create \
   --name "$HOST_NAME" \
-  --description "Server E" \
-  --inventory "$INVENTORY_NAME" \
-  --group "$GROUP_NAME" || true
+  --description "Server E for Prod" \
+  --inventory "$INVENTORY_NAME" || true
 
-# === Step 5: Grant Admin Role on Inventory to Team ===
+# === Step 5: Associate Host to Group
+echo "🔗 Associating host to group"
+tower-cli group associate \
+  --group "$GROUP_NAME" \
+  --host "$HOST_NAME" || true
+
+# === Step 6: Grant Admin Role on Inventory to Team
 echo "🔐 Granting Admin role on inventory to team $TEAM_NAME"
 tower-cli role grant \
   --type admin \
-  --inventory "$INVENTORY_NAME" \
-  --team "$TEAM_NAME" || true
+  --team "$TEAM_NAME" \
+  --inventory "$INVENTORY_NAME" || true
 
 echo "✅ Inventory setup completed for $INVENTORY_NAME"
