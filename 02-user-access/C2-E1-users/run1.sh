@@ -17,15 +17,13 @@ if [[ -z "$TOKEN" || "$TOKEN" == "null" ]]; then
   exit 1
 fi
 
-# Export for the wrapper
-export AWX_HOST="$CONTROLLER_HOST"
-export AWX_TOKEN="$TOKEN"
+echo "✅ Login successful. Token acquired."
 
-echo "✅ Login successful."
-
-# === WRAPPER FUNCTION ===
+# === WRAPPER FUNCTION with inline host + token ===
 AWX() {
-  awx --conf.host "$AWX_HOST" --conf.token "$AWX_TOKEN" --conf.insecure "$@"
+  awx --conf.host "$CONTROLLER_HOST" \
+      --conf.token "$TOKEN" \
+      --conf.insecure "$@"
 }
 
 # === Create Teams ===
