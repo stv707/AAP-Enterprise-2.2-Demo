@@ -15,9 +15,13 @@ for ORG_FILE in generated_users/*.txt; do
   ORG_NAME=$(basename "$ORG_FILE" .txt)
 
   while IFS=: read -r USER ROLE; do
-    echo "🔑 Granting $ROLE to $USER in $ORG_NAME"
-    tower-cli organization associate --user "$USER" --name "$ORG_NAME" --role "$ROLE" || echo "⚠️  Failed for $USER"
-  done
+  # Skip blank lines or incomplete rows
+  [[ -z "$USER" || -z "$ROLE" ]] && continue
+
+  echo "🔑 Granting $ROLE to $USER in $ORG_NAME"
+  tower-cli organization associate --user "$USER" --name "$ORG_NAME" --role "$ROLE" || echo "⚠️  Failed for $USER"
+done < "$ORG_FILE"
+
 done
 
 echo "✅ All user org-level roles assigned."
